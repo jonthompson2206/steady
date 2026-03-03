@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Flow - Smart Volume Management for Runners{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <img src="{{ url_for('static', filename='flow-logo.png') }}" alt="Flow" class="hero-logo">
+        <h1 class="hero-title">
+            <span class="hero-title-line">Train Smarter.</span>
+            <span class="hero-title-line">Stay <span class="accent">Injury-Free</span>.</span>
+        </h1>
+        
+        <p class="hero-subtitle">
+            Flow helps injury-prone runners manage training volume with the proven 
+            <span class="mono-highlight">25% rule</span> on a weighted 12-week basis.
+        </p>
+        
+        <div class="hero-features">
+            <div class="feature">
+                <span class="feature-icon">◈</span>
+                <span class="feature-text">Weighted 12-week volume tracking</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">◈</span>
+                <span class="feature-text">Intensity monitoring via heart rate</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">◈</span>
+                <span class="feature-text">Daily run recommendations</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">◈</span>
+                <span class="feature-text">Historical compliance tracking</span>
+            </div>
+        </div>
+        
+        <a href="{{ url_for('login') }}" class="btn btn--primary btn--large">
+            <svg class="strava-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
+            </svg>
+            Connect with Strava
+        </a>
+        
+        <p class="hero-note">
+            Syncs your running data automatically. We only read activity data.
+        </p>
+    </div>
+    
+    <div class="hero-visual">
+        <div class="visual-card">
+            <div class="visual-header">
+                <span class="visual-label">This Week</span>
+                <span class="visual-status status--safe">On Track</span>
+            </div>
+            <div class="visual-metric">
+                <span class="metric-value">32.4</span>
+                <span class="metric-unit">km</span>
+            </div>
+            <div class="visual-bar">
+                <div class="bar-fill" style="width: 72%"></div>
+                <div class="bar-limit"></div>
+            </div>
+            <div class="visual-context">
+                <span>Max recommended: 45.0 km</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="how-it-works">
+    <h2 class="section-title">How the 25% Rule Works</h2>
+    
+    <div class="rule-explanation">
+        <div class="rule-step">
+            <div class="step-number">01</div>
+            <div class="step-content">
+                <h3>Track Your Volume</h3>
+                <p>We sync your running data from Strava and calculate your weekly distance in kilometers.</p>
+            </div>
+        </div>
+        
+        <div class="rule-step">
+            <div class="step-number">02</div>
+            <div class="step-content">
+                <h3>Calculate Weighted Average</h3>
+                <p>Your weighted average is computed from the past 12 weeks, with recent weeks counting more.</p>
+            </div>
+        </div>
+        
+        <div class="rule-step">
+            <div class="step-number">03</div>
+            <div class="step-content">
+                <h3>Set Your Limit</h3>
+                <p>This week's maximum is your weighted 12-week average plus 25%. Never increase more than that.</p>
+            </div>
+        </div>
+        
+        <div class="rule-step">
+            <div class="step-number">04</div>
+            <div class="step-content">
+                <h3>Run Safely</h3>
+                <p>Get daily recommendations on how far to run while staying within safe limits.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

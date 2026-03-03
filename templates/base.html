@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Flow{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-content">
+            <a href="{{ url_for('index') }}" class="nav-logo">
+                <img src="{{ url_for('static', filename='flow-logo.png') }}" alt="Flow" class="nav-logo-img">
+            </a>
+            {% if current_user.is_authenticated %}
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+                <a href="{{ url_for('plan') }}" class="nav-link">Plan</a>
+                <a href="{{ url_for('sync') }}" class="nav-link">Sync</a>
+                <a href="{{ url_for('settings') }}" class="nav-link">Settings</a>
+                <a href="{{ url_for('logout') }}" class="nav-link nav-link--muted">Logout</a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+    
+    <script>
+    // Mobile navigation toggle
+    (function() {
+        const toggle = document.getElementById('navToggle');
+        const navLinks = document.getElementById('navLinks');
+        if (toggle && navLinks) {
+            toggle.addEventListener('click', function() {
+                const isOpen = navLinks.classList.toggle('nav-links--open');
+                toggle.classList.toggle('nav-toggle--open', isOpen);
+                toggle.setAttribute('aria-expanded', isOpen);
+            });
+            // Close menu when clicking a link
+            navLinks.querySelectorAll('.nav-link').forEach(function(link) {
+                link.addEventListener('click', function() {
+                    navLinks.classList.remove('nav-links--open');
+                    toggle.classList.remove('nav-toggle--open');
+                    toggle.setAttribute('aria-expanded', 'false');
+                });
+            });
+        }
+    })();
+    </script>
+    
+    <main class="main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-message--{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer class="footer">
+        <p>Train smart. Stay healthy. Run forever.</p>
+    </footer>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
