@@ -218,6 +218,10 @@ a:hover { color: var(--accent-mint); }
 .progress-fill.over { background: linear-gradient(90deg, var(--accent-red), #ff6b6b); }
 .progress-limit { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text-primary); border-radius: 1px; z-index: 1; }
 .metric-remaining { font-size: var(--font-size-xs); color: var(--text-muted); }
+.metric-card--error { display: flex; flex-direction: column; justify-content: center; }
+.metric-error { flex: 1; display: flex; align-items: center; }
+.metric-error p { font-size: var(--font-size-sm); color: var(--text-muted); line-height: 1.5; }
+.metric-error a { color: var(--accent-green); text-decoration: underline; }
 
 /* Week Context */
 .week-context { display: flex; gap: var(--space-xl); padding: var(--space-md); background: var(--bg-card); border-radius: var(--radius-md); }

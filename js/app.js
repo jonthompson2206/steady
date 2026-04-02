@@ -173,10 +173,7 @@ const App = (() => {
   }
 
   function renderMetricCard(label, current, max, unit, percent, increase, remaining, remainingUnit) {
-    const overThreshold = label === 'Long Run' ? 110 : 30;
-    const warnThreshold = label === 'Long Run' ? 100 : 25;
-    const pctClass = increase > overThreshold ? 'over' : (increase > warnThreshold ? 'warning' : '');
-    const sign = increase > 0 ? '+' : '';
+    const pctClass = percent > 100 ? 'over' : (percent > 90 ? 'warning' : '');
 
     let fill, limit;
     if (percent > 100) { fill = 100; limit = (10000 / percent); }
@@ -190,7 +187,7 @@ const App = (() => {
       <div class="metric-card">
         <div class="metric-header">
           <span class="metric-label">${label}</span>
-          <span class="metric-percent ${pctClass}">${sign}${increase}%</span>
+          <span class="metric-percent ${pctClass}">${percent}%</span>
         </div>
         <div class="metric-values">
           <span class="metric-current">${current}</span>
@@ -226,20 +223,22 @@ const App = (() => {
   }
 
   function renderReviewCard(label, actual, max, unit, percent, increase) {
-    const overThreshold = label === 'Long Run' ? 110 : 30;
-    const warnThreshold = label === 'Long Run' ? 100 : 25;
-    const pctClass = increase > overThreshold ? 'over' : (increase > warnThreshold ? 'warning' : '');
-    const sign = increase > 0 ? '+' : '';
+    const pctClass = percent > 100 ? 'over' : (percent > 90 ? 'warning' : '');
 
     let fill, limit;
     if (percent > 100) { fill = 100; limit = (10000 / percent); }
     else { fill = percent; limit = 100; }
 
+    const diff = unit === 'min' ? Math.round(max - actual) : Math.round((max - actual) * 10) / 10;
+    const remainingText = diff < 0
+      ? `${Math.abs(diff)} ${unit} over limit`
+      : `${diff} ${unit} under limit`;
+
     return `
       <div class="metric-card">
         <div class="metric-header">
           <span class="metric-label">${label}</span>
-          <span class="metric-percent ${pctClass}">${sign}${increase}%</span>
+          <span class="metric-percent ${pctClass}">${percent}%</span>
         </div>
         <div class="metric-values">
           <span class="metric-current">${actual}</span>
@@ -251,12 +250,30 @@ const App = (() => {
           <div class="progress-fill ${pctClass}" style="width: ${fill}%"></div>
           <div class="progress-limit" style="left: ${limit}%"></div>
         </div>
-        <div class="metric-remaining">${percent}% of recommended max</div>
+        <div class="metric-remaining">${remainingText}</div>
       </div>`;
+  }
+
+  function renderIntensityError() {
+    return `
+      <div class="metric-card metric-card--error">
+        <div class="metric-header">
+          <span class="metric-label">Intensity</span>
+        </div>
+        <div class="metric-error">
+          <p>Set your <a href="#/settings">Max Heart Rate</a> in Settings to enable intensity tracking.</p>
+        </div>
+      </div>`;
+  }
+
+  function isHeartRateConfigured() {
+    const settings = Store.getSettings();
+    return settings.max_heart_rate !== null && settings.max_heart_rate > 0;
   }
 
   function renderThisWeek(data) {
     const d = data;
+    const hrConfigured = isHeartRateConfigured();
     return `
       <section class="section">
         <h2 class="section-header">This Week's Progress</h2>
@@ -264,16 +281,18 @@ const App = (() => {
           ${renderMetricCard('Volume', d.current_week.distance_km, d.max_this_week.distance_km, 'km',
             d.progress.distance_percent, d.current_week_increase.distance_increase,
             d.remaining.distance_km, 'km')}
-          ${renderMetricCard('Intensity', d.current_week.intensity_minutes, d.max_this_week.intensity_minutes, 'min',
-            d.progress.intensity_percent, d.current_week_increase.intensity_increase,
-            d.remaining.intensity_minutes, 'min')}
+          ${hrConfigured
+            ? renderMetricCard('Intensity', d.current_week.intensity_minutes, d.max_this_week.intensity_minutes, 'min',
+                d.progress.intensity_percent, d.current_week_increase.intensity_increase,
+                d.remaining.intensity_minutes, 'min')
+            : renderIntensityError()}
           ${renderMetricCard('Long Run', d.current_week.long_run_km, d.max_this_week.long_run_km, 'km',
             d.progress.long_run_percent, d.current_week_increase.long_run_increase,
             d.remaining.long_run_km, 'km')}
         </div>
         <div class="week-context">
           <div class="context-item"><span class="context-label">Weighted avg volume</span><span class="context-value">${d.rolling_average.distance_km} km</span></div>
-          <div class="context-item"><span class="context-label">Weighted avg intensity</span><span class="context-value">${d.rolling_average.intensity_minutes} min</span></div>
+          ${hrConfigured ? `<div class="context-item"><span class="context-label">Weighted avg intensity</span><span class="context-value">${d.rolling_average.intensity_minutes} min</span></div>` : ''}
           <div class="context-item"><span class="context-label">Weighted avg long run</span><span class="context-value">${d.rolling_average.long_run_km} km</span></div>
         </div>
       </section>`;
@@ -282,13 +301,16 @@ const App = (() => {
   function renderLastWeek(data) {
     if (!data.last_week) return '';
     const lw = data.last_week;
+    const hrConfigured = isHeartRateConfigured();
     return `
       <section class="section">
         <h2 class="section-header">Review of Last Week</h2>
         <p class="section-subtitle">Week of ${lw.week_label}</p>
         <div class="metrics-grid">
           ${renderReviewCard('Volume', lw.distance_km, lw.max_distance, 'km', lw.distance_percent, lw.distance_increase)}
-          ${renderReviewCard('Intensity', lw.intensity_minutes, lw.max_intensity, 'min', lw.intensity_percent, lw.intensity_increase)}
+          ${hrConfigured
+            ? renderReviewCard('Intensity', lw.intensity_minutes, lw.max_intensity, 'min', lw.intensity_percent, lw.intensity_increase)
+            : renderIntensityError()}
           ${renderReviewCard('Long Run', lw.long_run_km, lw.max_long_run, 'km', lw.long_run_percent, lw.long_run_increase)}
         </div>
         <div class="week-context"><div class="context-item"><span class="context-label">Runs completed</span><span class="context-value">${lw.run_count}</span></div></div>
@@ -683,7 +705,7 @@ const App = (() => {
             <h2>Heart Rate</h2>
             <div class="form-group">
               <label for="maxHr">Max Heart Rate (bpm)</label>
-              <input type="number" id="maxHr" min="100" max="250" value="${settings.max_heart_rate}">
+              <input type="number" id="maxHr" min="100" max="250" placeholder="e.g. 190" value="${settings.max_heart_rate || ''}">
             </div>
             <div class="form-group">
               <label for="hrPercent">Intensity Threshold (%)</label>

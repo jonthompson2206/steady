@@ -167,7 +167,7 @@ const Store = (() => {
 
   function defaultSettings() {
     return {
-      max_heart_rate: 190,
+      max_heart_rate: null,
       hr_intensity_percent: 80.0,
       race_type: null,
       race_time_seconds: null,
