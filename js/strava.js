@@ -140,7 +140,8 @@ const Strava = (() => {
     const hrThreshold = settings.max_heart_rate * (settings.hr_intensity_percent / 100.0);
 
     const existingIds = await Store.getActivityIds();
-    const after = Math.floor((Date.now() - 365 * 24 * 60 * 60 * 1000) / 1000);
+    const TWELVE_WEEKS_MS = 12 * 7 * 24 * 60 * 60 * 1000;
+    const after = Math.floor((Date.now() - TWELVE_WEEKS_MS) / 1000);
 
     let page = 1;
     let totalAdded = 0;
@@ -168,16 +169,9 @@ const Strava = (() => {
           continue;
         }
 
-        let detail = act;
-        try {
-          detail = await apiFetch(`/activities/${act.id}`);
-        } catch {
-          // Fall back to summary data
-        }
-
         const distanceKm = (act.distance || 0) / 1000;
         const movingTime = act.moving_time || 0;
-        const avgHr = detail.average_heartrate || null;
+        const avgHr = act.average_heartrate || null;
 
         const timeAboveThreshold = Calculations.estimateIntensityFromAvgHR(
           avgHr, hrThreshold, movingTime
@@ -192,8 +186,8 @@ const Strava = (() => {
           elapsed_time_seconds: act.elapsed_time || 0,
           total_elevation_gain: act.total_elevation_gain || 0,
           average_heartrate: avgHr,
-          max_heartrate: detail.max_heartrate || null,
-          average_power: detail.average_watts || null,
+          max_heartrate: act.max_heartrate || null,
+          average_power: act.average_watts || null,
           time_above_80_hr: timeAboveThreshold,
           start_date: act.start_date_local || act.start_date,
         };
