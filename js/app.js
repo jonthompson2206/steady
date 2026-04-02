@@ -132,7 +132,6 @@ const App = (() => {
     const data = Calculations.calculateRecommendations(activities);
     console.log('[Dashboard] Recommendations:', { has_enough_data: data.has_enough_data, weeks_needed: data.weeks_needed, weekly_stats_count: data.weekly_stats?.length });
     const nextWeek = Calculations.calculateNextWeekPreview(data);
-    const outlook = Calculations.calculate6MonthOutlook(data);
 
     const dc = document.getElementById('dashContent');
     if (!dc) return;
@@ -145,17 +144,7 @@ const App = (() => {
 
     dc.innerHTML = renderThisWeek(data) +
       renderLastWeek(data) +
-      renderNextWeekPreview(nextWeek) +
-      renderOutlookSection(outlook) +
-      renderChartsSection();
-
-    chartPeriod = 13;
-    chartMetric = 'volume';
-    Charts.renderPerformanceChart('vsRecommendedChart', data.chart_data, chartPeriod, chartMetric);
-    Charts.renderOverUnderChart('overUnderChart', data.chart_data, chartPeriod, chartMetric);
-    if (outlook) Charts.renderOutlookChart('outlook6MonthChart', outlook);
-
-    bindChartControls(data);
+      renderNextWeekPreview(nextWeek);
   }
 
   function renderEmptyState(data, activities) {
@@ -324,92 +313,6 @@ const App = (() => {
       </section>`;
   }
 
-  function renderOutlookSection(outlook) {
-    if (!outlook) return '';
-    return `
-      <section class="section">
-        <h2 class="section-header">6 Month Outlook</h2>
-        <p class="section-subtitle">Projected weekly increases assuming each week ends exactly at recommended limits</p>
-        <div class="chart-container"><canvas id="outlook6MonthChart"></canvas></div>
-      </section>`;
-  }
-
-  function renderChartsSection() {
-    return `
-      <section class="section">
-        <div class="section-header-row">
-          <div>
-            <h2 class="section-header">Performance Over Time</h2>
-            <p class="section-subtitle">Actual weekly volume vs weighted 12-week average with recommended zone (avg to +30%)</p>
-          </div>
-          <div class="metric-selector" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-            <div>
-              <label for="chart-period" class="period-label">Period:</label>
-              <select id="chart-period" class="period-select">
-                <option value="4">1 Month</option>
-                <option value="13" selected>3 Months</option>
-                <option value="26">6 Months</option>
-                <option value="52">1 Year</option>
-              </select>
-            </div>
-            <div>
-              <label for="chart-metric" class="period-label">Metric:</label>
-              <select id="chart-metric" class="period-select">
-                <option value="volume">Volume</option>
-                <option value="intensity">Intensity</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="chart-container"><canvas id="vsRecommendedChart"></canvas></div>
-      </section>
-      <section class="section">
-        <div class="section-header-row">
-          <div>
-            <h2 class="section-header">Over/Under Recommended</h2>
-            <p class="section-subtitle">Difference between actual weekly volume and recommended limit each week</p>
-          </div>
-          <div class="metric-selector">
-            <label for="diff-chart-metric" class="period-label">Metric:</label>
-            <select id="diff-chart-metric" class="period-select">
-              <option value="volume">Volume</option>
-              <option value="intensity">Intensity</option>
-            </select>
-          </div>
-        </div>
-        <div class="chart-container"><canvas id="overUnderChart"></canvas></div>
-      </section>`;
-  }
-
-  function bindChartControls(data) {
-    const periodSel = document.getElementById('chart-period');
-    const metricSel = document.getElementById('chart-metric');
-    const diffMetricSel = document.getElementById('diff-chart-metric');
-
-    if (periodSel) {
-      periodSel.addEventListener('change', () => {
-        chartPeriod = parseInt(periodSel.value, 10);
-        Charts.renderPerformanceChart('vsRecommendedChart', data.chart_data, chartPeriod, chartMetric);
-        Charts.renderOverUnderChart('overUnderChart', data.chart_data, chartPeriod, chartMetric);
-      });
-    }
-    if (metricSel) {
-      metricSel.addEventListener('change', () => {
-        chartMetric = metricSel.value;
-        if (diffMetricSel) diffMetricSel.value = chartMetric;
-        Charts.renderPerformanceChart('vsRecommendedChart', data.chart_data, chartPeriod, chartMetric);
-        Charts.renderOverUnderChart('overUnderChart', data.chart_data, chartPeriod, chartMetric);
-      });
-    }
-    if (diffMetricSel) {
-      diffMetricSel.addEventListener('change', () => {
-        chartMetric = diffMetricSel.value;
-        if (metricSel) metricSel.value = chartMetric;
-        Charts.renderPerformanceChart('vsRecommendedChart', data.chart_data, chartPeriod, chartMetric);
-        Charts.renderOverUnderChart('overUnderChart', data.chart_data, chartPeriod, chartMetric);
-      });
-    }
-  }
 
   // =========================================================================
   // Plan
