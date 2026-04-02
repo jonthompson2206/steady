@@ -122,6 +122,8 @@ const Strava = (() => {
       url.searchParams.set(k, v);
     }
 
+    console.log('[Strava API]', path, Object.fromEntries(url.searchParams));
+
     const res = await fetch(url.toString(), {
       headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -131,7 +133,16 @@ const Strava = (() => {
       throw new Error('Authentication expired');
     }
 
-    if (!res.ok) throw new Error(`Strava API error: ${res.status}`);
+    if (res.status === 429) {
+      console.error('[Strava API] Rate limited!');
+      throw new Error('Strava rate limit hit. Try again in 15 minutes.');
+    }
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.error('[Strava API] Error:', res.status, body);
+      throw new Error(`Strava API error: ${res.status}`);
+    }
     return res.json();
   }
 
@@ -140,8 +151,11 @@ const Strava = (() => {
     const hrThreshold = settings.max_heart_rate * (settings.hr_intensity_percent / 100.0);
 
     const existingIds = await Store.getActivityIds();
-    const TWELVE_WEEKS_MS = 12 * 7 * 24 * 60 * 60 * 1000;
-    const after = Math.floor((Date.now() - TWELVE_WEEKS_MS) / 1000);
+    const SIXTEEN_WEEKS_MS = 16 * 7 * 24 * 60 * 60 * 1000;
+    const after = Math.floor((Date.now() - SIXTEEN_WEEKS_MS) / 1000);
+
+    console.log('[Sync] Starting sync. Fetching activities after', new Date(after * 1000).toISOString());
+    console.log('[Sync] Existing cached activities:', existingIds.size);
 
     let page = 1;
     let totalAdded = 0;
@@ -154,16 +168,19 @@ const Strava = (() => {
       try {
         activities = await apiFetch('/athlete/activities', { after, page, per_page: 100 });
       } catch (err) {
-        console.error('Failed to fetch activities page', page, err);
+        console.error('[Sync] Failed to fetch activities page', page, err);
         break;
       }
+
+      console.log(`[Sync] Page ${page}: received ${activities ? activities.length : 0} activities`);
 
       if (!activities || activities.length === 0) break;
 
       const newActivities = [];
 
       for (const act of activities) {
-        if (!RUNNING_TYPES.includes(act.type)) continue;
+        const actType = act.sport_type || act.type;
+        if (!RUNNING_TYPES.includes(actType)) continue;
         if (existingIds.has(act.id)) {
           totalSkipped++;
           continue;
@@ -180,7 +197,7 @@ const Strava = (() => {
         const activity = {
           strava_id: act.id,
           name: act.name || 'Run',
-          activity_type: act.type,
+          activity_type: actType,
           distance_km: distanceKm,
           moving_time_seconds: movingTime,
           elapsed_time_seconds: act.elapsed_time || 0,
@@ -203,11 +220,14 @@ const Strava = (() => {
         await Store.putActivities(newActivities);
       }
 
+      console.log(`[Sync] Page ${page} done: ${newActivities.length} new, ${totalSkipped} skipped so far`);
+
       page++;
       if (activities.length < 100) break;
     }
 
     Store.saveLastSyncTime();
+    console.log(`[Sync] Complete. Added: ${totalAdded}, Skipped: ${totalSkipped}`);
 
     if (onProgress) onProgress({ status: 'complete', totalAdded, totalSkipped });
 

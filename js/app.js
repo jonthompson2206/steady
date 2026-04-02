@@ -128,7 +128,9 @@ const App = (() => {
       </div>`;
 
     const activities = await Store.getAllActivities();
+    console.log('[Dashboard] Activities loaded from store:', activities.length);
     const data = Calculations.calculateRecommendations(activities);
+    console.log('[Dashboard] Recommendations:', { has_enough_data: data.has_enough_data, weeks_needed: data.weeks_needed, weekly_stats_count: data.weekly_stats?.length });
     const nextWeek = Calculations.calculateNextWeekPreview(data);
     const outlook = Calculations.calculate6MonthOutlook(data);
 
@@ -136,6 +138,7 @@ const App = (() => {
     if (!dc) return;
 
     if (!data.has_enough_data) {
+      console.log('[Dashboard] Not enough data, showing empty state');
       dc.innerHTML = renderEmptyState(data, activities);
       return;
     }
