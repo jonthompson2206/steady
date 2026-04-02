@@ -1,5 +1,5 @@
 const Strava = (() => {
-  const STRAVA_CLIENT_ID = '140129';
+  const STRAVA_CLIENT_ID = '181272';
   const TOKEN_ENDPOINT = '/api/strava-token';
   const API_BASE = 'https://www.strava.com/api/v3';
   const RUNNING_TYPES = ['Run', 'VirtualRun', 'TrailRun'];
