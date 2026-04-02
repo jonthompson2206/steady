@@ -818,9 +818,10 @@ const App = (() => {
           <h2>Data</h2>
           <p class="form-help">Last sync: ${syncText}</p>
           <div class="form-actions" style="margin-top: 12px">
-            <button class="btn btn--secondary" onclick="App.sync()">Sync Activities</button>
-            <button class="btn btn--secondary" onclick="App.fullResync()">Full Re-sync</button>
-            <button class="btn btn--danger" onclick="App.logoutAndClear()">Logout & Clear Data</button>
+            <button type="button" class="btn btn--secondary" onclick="App.sync()">Sync Activities</button>
+            <button type="button" class="btn btn--secondary" onclick="App.fullResync()">Full Re-sync</button>
+            <button type="button" class="btn btn--danger" onclick="App.clearCachedData()">Clear Cached Data</button>
+            <button type="button" class="btn btn--secondary" onclick="App.logout()">Logout</button>
           </div>
         </section>
       </div>`;
@@ -923,11 +924,17 @@ const App = (() => {
     route();
   }
 
-  function logoutAndClear() {
-    if (!confirm('This will log you out and clear all local data. Continue?')) return;
+  function logout() {
+    if (!confirm('Log out of this browser session?')) return;
     Strava.logout();
-    Store.clearAll();
     window.location.hash = '#/';
+    route();
+  }
+
+  async function clearCachedData() {
+    if (!confirm('Clear all cached data for this account from this browser?')) return;
+    await Store.clearCurrentUserData();
+    window.location.hash = '#/dashboard';
     route();
   }
 
@@ -944,7 +951,8 @@ const App = (() => {
     init,
     sync,
     fullResync,
-    logoutAndClear,
+    logout,
+    clearCachedData,
     openRunModal,
     closeRunModal,
     saveRun,

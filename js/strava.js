@@ -94,12 +94,14 @@ const Strava = (() => {
         expires_at: data.expires_at,
       });
       if (data.athlete) {
-        Store.saveUserProfile({
+        const profile = {
           id: data.athlete.id,
           firstname: data.athlete.firstname,
           lastname: data.athlete.lastname,
           username: (data.athlete.firstname || '') + ' ' + (data.athlete.lastname || ''),
-        });
+        };
+        Store.saveUserProfile(profile);
+        await Store.migrateLegacyActivitiesToUser(profile.id);
       }
       return true;
     } catch (err) {
@@ -110,7 +112,6 @@ const Strava = (() => {
 
   function logout() {
     Store.clearTokens();
-    Store.clearUserProfile();
   }
 
   async function apiFetch(path, params = {}) {
@@ -149,6 +150,8 @@ const Strava = (() => {
   async function syncActivities(onProgress) {
     const settings = Store.getSettings();
     const hrThreshold = settings.max_heart_rate * (settings.hr_intensity_percent / 100.0);
+    const user = Store.getUserProfile();
+    const userId = user && user.id !== undefined && user.id !== null ? String(user.id) : null;
 
     const existingIds = await Store.getActivityIds();
     const SIXTEEN_WEEKS_MS = 16 * 7 * 24 * 60 * 60 * 1000;
@@ -196,6 +199,7 @@ const Strava = (() => {
 
         const activity = {
           strava_id: act.id,
+          user_id: userId,
           name: act.name || 'Run',
           activity_type: actType,
           distance_km: distanceKm,

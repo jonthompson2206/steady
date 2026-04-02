@@ -1,6 +1,6 @@
 const Store = (() => {
   const DB_NAME = 'steady';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   const ACTIVITIES_STORE = 'activities';
 
   let _db = null;
@@ -15,6 +15,14 @@ const Store = (() => {
           const store = db.createObjectStore(ACTIVITIES_STORE, { keyPath: 'strava_id' });
           store.createIndex('user_id', 'user_id', { unique: false });
           store.createIndex('start_date', 'start_date', { unique: false });
+        } else {
+          const store = req.transaction.objectStore(ACTIVITIES_STORE);
+          if (!store.indexNames.contains('user_id')) {
+            store.createIndex('user_id', 'user_id', { unique: false });
+          }
+          if (!store.indexNames.contains('start_date')) {
+            store.createIndex('start_date', 'start_date', { unique: false });
+          }
         }
       };
       req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
@@ -22,13 +30,40 @@ const Store = (() => {
     });
   }
 
+  function getCurrentUserId() {
+    const profile = getUserProfile();
+    if (!profile || profile.id === undefined || profile.id === null) return null;
+    return String(profile.id);
+  }
+
+  function scopedKey(baseKey, userId) {
+    return userId ? `${baseKey}:${userId}` : baseKey;
+  }
+
+  function removeKeysWithPrefix(prefix) {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        localStorage.removeItem(key);
+      }
+    }
+  }
+
   async function getAllActivities() {
     const db = await openDB();
+    const userId = getCurrentUserId();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(ACTIVITIES_STORE, 'readonly');
       const store = tx.objectStore(ACTIVITIES_STORE);
       const req = store.getAll();
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const all = req.result || [];
+        if (!userId) {
+          resolve(all);
+          return;
+        }
+        resolve(all.filter(a => String(a.user_id || '') === userId));
+      };
       req.onerror = () => reject(req.error);
     });
   }
@@ -57,11 +92,24 @@ const Store = (() => {
 
   async function getActivityIds() {
     const db = await openDB();
+    const userId = getCurrentUserId();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(ACTIVITIES_STORE, 'readonly');
       const store = tx.objectStore(ACTIVITIES_STORE);
-      const req = store.getAllKeys();
-      req.onsuccess = () => resolve(new Set(req.result));
+      const req = store.openCursor();
+      const ids = new Set();
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (!cursor) {
+          resolve(ids);
+          return;
+        }
+        const activity = cursor.value;
+        if (!userId || String(activity.user_id || '') === userId) {
+          ids.add(activity.strava_id);
+        }
+        cursor.continue();
+      };
       req.onerror = () => reject(req.error);
     });
   }
@@ -77,18 +125,44 @@ const Store = (() => {
     });
   }
 
+  async function clearActivitiesForUser(userId) {
+    const db = await openDB();
+    if (!userId) {
+      await clearActivities();
+      return;
+    }
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(ACTIVITIES_STORE, 'readwrite');
+      const store = tx.objectStore(ACTIVITIES_STORE);
+      const req = store.openCursor();
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (!cursor) return;
+        const activity = cursor.value;
+        if (String(activity.user_id || '') === String(userId)) {
+          cursor.delete();
+        }
+        cursor.continue();
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
   // localStorage helpers for settings and planned runs
 
   function getSettings() {
+    const key = scopedKey('steady_settings', getCurrentUserId());
     try {
-      return JSON.parse(localStorage.getItem('steady_settings')) || defaultSettings();
+      return JSON.parse(localStorage.getItem(key)) || defaultSettings();
     } catch {
       return defaultSettings();
     }
   }
 
   function saveSettings(settings) {
-    localStorage.setItem('steady_settings', JSON.stringify(settings));
+    const key = scopedKey('steady_settings', getCurrentUserId());
+    localStorage.setItem(key, JSON.stringify(settings));
   }
 
   function defaultSettings() {
@@ -134,8 +208,9 @@ const Store = (() => {
 
   // Planned runs stored as JSON array keyed by week start date
   function getPlannedRuns(weekKey) {
+    const key = scopedKey('steady_planned_runs', getCurrentUserId());
     try {
-      const all = JSON.parse(localStorage.getItem('steady_planned_runs')) || {};
+      const all = JSON.parse(localStorage.getItem(key)) || {};
       return all[weekKey] || [];
     } catch {
       return [];
@@ -143,31 +218,74 @@ const Store = (() => {
   }
 
   function savePlannedRuns(weekKey, runs) {
+    const key = scopedKey('steady_planned_runs', getCurrentUserId());
     try {
-      const all = JSON.parse(localStorage.getItem('steady_planned_runs')) || {};
+      const all = JSON.parse(localStorage.getItem(key)) || {};
       all[weekKey] = runs;
-      localStorage.setItem('steady_planned_runs', JSON.stringify(all));
+      localStorage.setItem(key, JSON.stringify(all));
     } catch {
       const obj = {};
       obj[weekKey] = runs;
-      localStorage.setItem('steady_planned_runs', JSON.stringify(obj));
+      localStorage.setItem(key, JSON.stringify(obj));
     }
   }
 
   function getAllPlannedRuns() {
+    const key = scopedKey('steady_planned_runs', getCurrentUserId());
     try {
-      return JSON.parse(localStorage.getItem('steady_planned_runs')) || {};
+      return JSON.parse(localStorage.getItem(key)) || {};
     } catch {
       return {};
     }
   }
 
   function getLastSyncTime() {
-    return localStorage.getItem('steady_last_sync') || null;
+    const key = scopedKey('steady_last_sync', getCurrentUserId());
+    return localStorage.getItem(key) || null;
   }
 
   function saveLastSyncTime() {
-    localStorage.setItem('steady_last_sync', new Date().toISOString());
+    const key = scopedKey('steady_last_sync', getCurrentUserId());
+    localStorage.setItem(key, new Date().toISOString());
+  }
+
+  async function migrateLegacyActivitiesToUser(userId) {
+    const db = await openDB();
+    if (!userId) return;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(ACTIVITIES_STORE, 'readwrite');
+      const store = tx.objectStore(ACTIVITIES_STORE);
+      const req = store.openCursor();
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (!cursor) return;
+        const activity = cursor.value;
+        if (activity.user_id === undefined || activity.user_id === null || activity.user_id === '') {
+          activity.user_id = String(userId);
+          cursor.update(activity);
+        }
+        cursor.continue();
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function clearCurrentUserData() {
+    const userId = getCurrentUserId();
+    await clearActivitiesForUser(userId);
+    if (userId) {
+      localStorage.removeItem(scopedKey('steady_settings', userId));
+      localStorage.removeItem(scopedKey('steady_planned_runs', userId));
+      localStorage.removeItem(scopedKey('steady_last_sync', userId));
+    } else {
+      localStorage.removeItem('steady_settings');
+      localStorage.removeItem('steady_planned_runs');
+      localStorage.removeItem('steady_last_sync');
+      removeKeysWithPrefix('steady_settings:');
+      removeKeysWithPrefix('steady_planned_runs:');
+      removeKeysWithPrefix('steady_last_sync:');
+    }
   }
 
   async function clearAll() {
@@ -176,6 +294,9 @@ const Store = (() => {
     localStorage.removeItem('steady_user');
     localStorage.removeItem('steady_planned_runs');
     localStorage.removeItem('steady_last_sync');
+    removeKeysWithPrefix('steady_settings:');
+    removeKeysWithPrefix('steady_planned_runs:');
+    removeKeysWithPrefix('steady_last_sync:');
     await clearActivities();
   }
 
@@ -185,6 +306,7 @@ const Store = (() => {
     putActivities,
     getActivityIds,
     clearActivities,
+    clearActivitiesForUser,
     getSettings,
     saveSettings,
     getTokens,
@@ -198,6 +320,8 @@ const Store = (() => {
     getAllPlannedRuns,
     getLastSyncTime,
     saveLastSyncTime,
+    migrateLegacyActivitiesToUser,
+    clearCurrentUserData,
     clearAll,
   };
 })();
