@@ -2,6 +2,9 @@
   publish = "."
   functions = "netlify/functions"
 
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "STRAVA_CLIENT_ID,STRAVA_CLIENT_SECRET"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
