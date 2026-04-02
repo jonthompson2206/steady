@@ -29,7 +29,7 @@ Smart volume management for injury-prone runners. Tracks your running volume usi
    - **Application Name**: Steady
    - **Category**: Training
    - **Website**: Your Netlify URL (can update after deploy)
-   - **Authorization Callback Domain**: Your Netlify domain (e.g. `steady-app.netlify.app`)
+   - **Authorization Callback Domain**: Your Netlify domain (e.g. `run-steady.netlify.app`)
 
 ### 2. Deploy
 
@@ -44,7 +44,7 @@ Smart volume management for injury-prone runners. Tracks your running volume usi
 
 ### 3. Update Strava Callback Domain
 
-After your first deploy, update the **Authorization Callback Domain** in your Strava API settings to match your Netlify URL (e.g. `steady-app.netlify.app`).
+After your first deploy, update the **Authorization Callback Domain** in your Strava API settings to match your Netlify URL (e.g. `run-steady.netlify.app`).
 
 ### 4. Update Client ID
 
