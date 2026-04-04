@@ -223,6 +223,19 @@ a:hover { color: var(--accent-mint); }
 .metric-error p { font-size: var(--font-size-sm); color: var(--text-muted); line-height: 1.5; }
 .metric-error a { color: var(--accent-green); text-decoration: underline; }
 
+/* Fitness Progress */
+.fitness-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg); margin-bottom: var(--space-lg); }
+.fitness-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-lg); }
+.fitness-label { font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-md); }
+.fitness-comparison { display: flex; align-items: baseline; gap: var(--space-md); margin-bottom: var(--space-sm); }
+.fitness-old { font-size: var(--font-size-lg); font-weight: 500; color: var(--text-muted); }
+.fitness-arrow { font-size: var(--font-size-md); color: var(--text-muted); }
+.fitness-now { font-size: var(--font-size-2xl); font-weight: 700; color: var(--text-primary); }
+.fitness-unit { font-size: var(--font-size-sm); color: var(--text-secondary); font-weight: 400; }
+.fitness-change { font-size: var(--font-size-sm); font-weight: 600; }
+.fitness-change.up { color: var(--accent-green); }
+.fitness-change.down { color: var(--accent-red); }
+
 /* Week Context */
 .week-context { display: flex; gap: var(--space-xl); padding: var(--space-md); background: var(--bg-card); border-radius: var(--radius-md); }
 .context-item { display: flex; flex-direction: column; gap: var(--space-xs); }
@@ -413,6 +426,10 @@ a:hover { color: var(--accent-mint); }
     .dashboard { max-width: 100%; }
     .dash-header { flex-direction: column; gap: var(--space-md); margin-bottom: var(--space-lg); }
     .dash-greeting h1 { font-size: var(--font-size-xl); }
+
+    .fitness-grid { grid-template-columns: 1fr; gap: var(--space-md); }
+    .fitness-card { padding: var(--space-md); }
+    .fitness-now { font-size: var(--font-size-xl); }
 
     .metrics-grid { grid-template-columns: 1fr; gap: var(--space-md); }
     .metric-card { padding: var(--space-md); }

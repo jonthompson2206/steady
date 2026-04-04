@@ -347,6 +347,51 @@ const Calculations = (() => {
     return { projections, current_max: currentWeekMax };
   }
 
+  function calculateFitnessProgress(weeklyStats) {
+    const recentIdx = 1;
+    const recentAvgDist = calculateWeightedAverage(weeklyStats, 'distance_km', recentIdx);
+    const recentAvgInt = calculateWeightedAverage(weeklyStats, 'intensity_minutes', recentIdx);
+
+    if (recentAvgDist === null) return null;
+
+    let baselineIdx = null;
+    for (let i = weeklyStats.length - 13; i >= 2; i--) {
+      const avg = calculateWeightedAverage(weeklyStats, 'distance_km', i);
+      if (avg !== null && avg > 0) {
+        baselineIdx = i;
+        break;
+      }
+    }
+
+    if (baselineIdx === null || baselineIdx <= recentIdx) return null;
+
+    const baselineAvgDist = calculateWeightedAverage(weeklyStats, 'distance_km', baselineIdx);
+    const baselineAvgInt = calculateWeightedAverage(weeklyStats, 'intensity_minutes', baselineIdx);
+
+    const distChange = recentAvgDist - baselineAvgDist;
+    const intChange = recentAvgInt - baselineAvgInt;
+
+    return {
+      recent: {
+        week_label: weeklyStats[recentIdx].week_label,
+        distance_km: r1(recentAvgDist),
+        intensity_minutes: Math.round(recentAvgInt),
+      },
+      baseline: {
+        week_label: weeklyStats[baselineIdx].week_label,
+        distance_km: r1(baselineAvgDist),
+        intensity_minutes: Math.round(baselineAvgInt),
+        weeks_ago: baselineIdx,
+      },
+      change: {
+        distance_km: r1(distChange),
+        intensity_minutes: Math.round(intChange),
+        distance_percent: r1(baselineAvgDist > 0 ? (distChange / baselineAvgDist * 100) : 0),
+        intensity_percent: r1(baselineAvgInt > 0 ? (intChange / baselineAvgInt * 100) : 0),
+      },
+    };
+  }
+
   function buildVolumeTrendData(weeklyStats) {
     const lookback = 12;
     const totalWeight = 78;
@@ -484,6 +529,7 @@ const Calculations = (() => {
     calculateRecommendations,
     calculateNextWeekPreview,
     calculate6MonthOutlook,
+    calculateFitnessProgress,
     buildVolumeTrendData,
     buildChartData,
     estimateIntensityFromAvgHR,

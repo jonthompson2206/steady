@@ -143,8 +143,10 @@ const App = (() => {
     }
 
     const trendData = Calculations.buildVolumeTrendData(data.weekly_stats);
+    const fitnessProgress = Calculations.calculateFitnessProgress(data.weekly_stats);
 
-    dc.innerHTML = renderThisWeek(data) +
+    dc.innerHTML = renderFitnessProgress(fitnessProgress) +
+      renderThisWeek(data) +
       renderVolumeTrend(trendData) +
       renderLastWeek(data) +
       renderNextWeekPreview(nextWeek);
@@ -276,6 +278,46 @@ const App = (() => {
   function isHeartRateConfigured() {
     const settings = Store.getSettings();
     return settings.max_heart_rate !== null && settings.max_heart_rate > 0;
+  }
+
+  function renderFitnessProgress(fp) {
+    if (!fp) return '';
+    const hrConfigured = isHeartRateConfigured();
+
+    const distUp = fp.change.distance_km >= 0;
+    const distSign = distUp ? '+' : '';
+    const distClass = distUp ? 'up' : 'down';
+
+    const intUp = fp.change.intensity_minutes >= 0;
+    const intSign = intUp ? '+' : '';
+    const intClass = intUp ? 'up' : 'down';
+
+    return `
+      <section class="section">
+        <h2 class="section-header">Training Progress</h2>
+        <p class="section-subtitle">12-week weighted average: week of ${fp.baseline.week_label} vs week of ${fp.recent.week_label}</p>
+        <div class="fitness-grid">
+          <div class="fitness-card">
+            <div class="fitness-label">Avg Volume</div>
+            <div class="fitness-comparison">
+              <span class="fitness-old">${fp.baseline.distance_km}<span class="fitness-unit"> km</span></span>
+              <span class="fitness-arrow">→</span>
+              <span class="fitness-now">${fp.recent.distance_km}<span class="fitness-unit"> km</span></span>
+            </div>
+            <div class="fitness-change ${distClass}">${distSign}${fp.change.distance_km} km (${distSign}${fp.change.distance_percent}%)</div>
+          </div>
+          ${hrConfigured ? `
+          <div class="fitness-card">
+            <div class="fitness-label">Avg Intensity</div>
+            <div class="fitness-comparison">
+              <span class="fitness-old">${fp.baseline.intensity_minutes}<span class="fitness-unit"> min</span></span>
+              <span class="fitness-arrow">→</span>
+              <span class="fitness-now">${fp.recent.intensity_minutes}<span class="fitness-unit"> min</span></span>
+            </div>
+            <div class="fitness-change ${intClass}">${intSign}${fp.change.intensity_minutes} min (${intSign}${fp.change.intensity_percent}%)</div>
+          </div>` : ''}
+        </div>
+      </section>`;
   }
 
   function renderThisWeek(data) {
