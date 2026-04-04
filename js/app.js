@@ -309,8 +309,8 @@ const App = (() => {
     if (!trendData) return '';
     return `
       <section class="section">
-        <h2 class="section-header">Volume Trend & Projection</h2>
-        <p class="section-subtitle">12-week weighted average with 4-week forward projection assuming targets are met</p>
+        <h2 class="section-header">Volume Trend</h2>
+        <p class="section-subtitle">Last 12 completed weeks — recommended zone is your 12-week weighted average to +25%</p>
         <div class="chart-container">
           <canvas id="volumeTrendChart"></canvas>
         </div>

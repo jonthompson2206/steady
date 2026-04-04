@@ -343,105 +343,60 @@ const Charts = (() => {
     const labels = trendData.map(d => d.week_label);
     const weightedAvgData = trendData.map(d => d.weighted_avg);
     const recommendationData = trendData.map(d => d.recommendation);
-    const actualData = trendData.map(d => d.is_future ? null : d.actual_volume);
-    const projectedData = trendData.map(d => d.is_future ? d.projected_volume : null);
+    const actualData = trendData.map(d => d.actual_volume);
 
-    const actualBgColors = trendData.map((d, i) => {
-      if (d.is_future || d.actual_volume === null) return 'transparent';
-      if (d.is_current) return accentGreen + '60';
-      return d.actual_volume > recommendationData[i] ? accentRed + '60' : 'rgba(255,255,255,0.25)';
-    });
-    const actualBorderColors = trendData.map((d, i) => {
-      if (d.is_future || d.actual_volume === null) return 'transparent';
-      if (d.is_current) return accentGreen;
-      return d.actual_volume > recommendationData[i] ? accentRed : 'rgba(255,255,255,0.5)';
-    });
+    const accentBlue = '#66ccff';
 
-    const todayDivider = {
-      id: 'todayDivider',
-      beforeDraw(chart) {
-        const currentIdx = trendData.findIndex(d => d.is_current);
-        if (currentIdx < 0 || currentIdx >= trendData.length - 1) return;
-        const xScale = chart.scales.x;
-        const yScale = chart.scales.y;
-        const x = (xScale.getPixelForValue(currentIdx) + xScale.getPixelForValue(currentIdx + 1)) / 2;
-        const c = chart.ctx;
-        c.save();
-        c.setLineDash([4, 4]);
-        c.strokeStyle = '#444';
-        c.lineWidth = 1;
-        c.beginPath();
-        c.moveTo(x, yScale.top);
-        c.lineTo(x, yScale.bottom);
-        c.stroke();
-        c.restore();
-        c.save();
-        c.fillStyle = '#555';
-        c.font = "10px 'Inter', sans-serif";
-        c.textAlign = 'left';
-        c.fillText('Projected', x + 6, yScale.top + 14);
-        c.restore();
-      },
-    };
+    const pointColors = trendData.map((d, i) => {
+      if (d.actual_volume > recommendationData[i]) return accentRed;
+      if (d.actual_volume < weightedAvgData[i]) return accentBlue;
+      return '#ffffff';
+    });
 
     volumeTrendChart = new Chart(ctx, {
-      type: 'bar',
+      type: 'line',
       data: {
         labels,
         datasets: [
           {
-            type: 'line',
-            label: 'Rec. Max (+25%)',
+            label: 'Recommended Zone',
             data: recommendationData,
-            borderColor: accentGreen + '50',
+            borderColor: accentGreen + '35',
             borderWidth: 1,
-            borderDash: [5, 5],
+            borderDash: [4, 4],
             backgroundColor: 'transparent',
             fill: {
               target: 1,
-              above: accentGreen + '12',
+              above: accentGreen + '18',
             },
             tension: 0.3,
             pointRadius: 0,
-            pointHoverRadius: 4,
-            pointBackgroundColor: accentGreen + '50',
-            order: 4,
-          },
-          {
-            type: 'line',
-            label: '12wk Weighted Avg',
-            data: weightedAvgData,
-            borderColor: accentGreen,
-            borderWidth: 2,
-            fill: false,
-            tension: 0.3,
-            pointRadius: 2,
-            pointHoverRadius: 5,
-            pointBackgroundColor: accentGreen,
+            pointHoverRadius: 0,
             order: 3,
           },
           {
-            label: 'Actual Volume',
-            data: actualData,
-            backgroundColor: actualBgColors,
-            borderColor: actualBorderColors,
+            label: '_weighted_avg',
+            data: weightedAvgData,
+            borderColor: accentGreen + '35',
             borderWidth: 1,
-            borderRadius: 3,
-            barPercentage: 0.65,
-            categoryPercentage: 0.85,
-            stack: 'volume',
-            order: 1,
+            fill: false,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            order: 2,
           },
           {
-            label: 'Projected Volume',
-            data: projectedData,
-            backgroundColor: accentGreen + '25',
-            borderColor: accentGreen + '50',
-            borderWidth: 1,
-            borderRadius: 3,
-            barPercentage: 0.65,
-            categoryPercentage: 0.85,
-            stack: 'volume',
+            label: 'Actual Weekly Volume',
+            data: actualData,
+            borderColor: '#ffffff',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.3,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: pointColors,
+            pointBorderColor: pointColors,
+            pointBorderWidth: 2,
             order: 1,
           },
         ],
@@ -451,51 +406,46 @@ const Charts = (() => {
         maintainAspectRatio: false,
         interaction: { intersect: false, mode: 'index' },
         plugins: {
-          legend: legendStyle(),
+          legend: {
+            ...legendStyle(),
+            labels: {
+              ...legendStyle().labels,
+              filter: (item) => !item.text.startsWith('_'),
+            },
+          },
           tooltip: {
             ...tooltipStyle(),
             callbacks: {
-              title: (items) => {
-                const idx = items[0].dataIndex;
-                const d = trendData[idx];
-                if (d.is_current) return 'This Week (' + d.week_label + ')';
-                if (d.is_future) return 'Projected (' + d.week_label + ')';
-                return 'Week of ' + d.week_label;
-              },
+              title: (items) => 'Week of ' + items[0].label,
               label: (context) => {
+                if (context.dataset.label.startsWith('_')) return null;
                 const value = context.parsed.y;
                 if (value === null || value === undefined) return null;
-                return context.dataset.label + ': ' + value + ' km';
+                const label = context.dataset.label === 'Recommended Zone'
+                  ? 'Rec. Max (+25%)'
+                  : context.dataset.label;
+                return label + ': ' + value + ' km';
+              },
+              afterBody: (items) => {
+                const idx = items[0].dataIndex;
+                const d = trendData[idx];
+                return '12wk Weighted Avg: ' + d.weighted_avg + ' km';
               },
             },
-            filter: (item) => item.parsed.y !== null && item.parsed.y !== undefined,
+            filter: (item) => !item.dataset.label.startsWith('_'),
           },
         },
         scales: {
-          x: {
-            stacked: true,
-            grid: { color: '#222', drawBorder: false },
-            ticks: {
-              color: '#666',
-              font: { family: "'Inter', sans-serif", size: 10 },
-              maxRotation: 45,
-              autoSkip: true,
-              maxTicksLimit: 17,
-            },
-          },
+          ...commonAxisStyle(),
           y: {
-            stacked: true,
-            grid: { color: '#222', drawBorder: false },
+            ...commonAxisStyle().y,
             ticks: {
-              color: '#666',
-              font: { family: "'Inter', sans-serif", size: 10 },
+              ...commonAxisStyle().y.ticks,
               callback: (v) => v + ' km',
             },
-            beginAtZero: true,
           },
         },
       },
-      plugins: [todayDivider],
     });
   }
 

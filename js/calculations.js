@@ -355,7 +355,7 @@ const Calculations = (() => {
 
     const dataPoints = [];
 
-    for (let wsIdx = 12; wsIdx >= 0; wsIdx--) {
+    for (let wsIdx = 12; wsIdx >= 1; wsIdx--) {
       if (wsIdx + 1 + lookback > weeklyStats.length) continue;
 
       let weightedSum = 0;
@@ -366,46 +366,10 @@ const Calculations = (() => {
 
       dataPoints.push({
         week_label: weeklyStats[wsIdx].week_label,
-        is_current: wsIdx === 0,
-        is_future: false,
         actual_volume: r1(weeklyStats[wsIdx].distance_km),
-        projected_volume: null,
         weighted_avg: r1(weightedAvg),
         recommendation: r1(weightedAvg * 1.25),
       });
-    }
-
-    const currentRec = dataPoints[dataPoints.length - 1].recommendation;
-    let history = [currentRec];
-    for (let w = 1; w < lookback; w++) {
-      history.push(weeklyStats[w].distance_km || 0);
-    }
-
-    const { monday: currentMonday } = getWeekBoundaries(new Date());
-
-    for (let f = 1; f <= 4; f++) {
-      let weightedSum = 0;
-      for (let w = 0; w < lookback; w++) {
-        weightedSum += history[w] * (lookback - w);
-      }
-      const weightedAvg = weightedSum / totalWeight;
-      const recommendation = weightedAvg * 1.25;
-
-      const weekStart = new Date(currentMonday);
-      weekStart.setDate(currentMonday.getDate() + f * 7);
-      const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-      dataPoints.push({
-        week_label: label,
-        is_current: false,
-        is_future: true,
-        actual_volume: null,
-        projected_volume: r1(recommendation),
-        weighted_avg: r1(weightedAvg),
-        recommendation: r1(recommendation),
-      });
-
-      history = [recommendation, ...history.slice(0, 11)];
     }
 
     return dataPoints;
