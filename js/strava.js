@@ -154,8 +154,8 @@ const Strava = (() => {
     const userId = user && user.id !== undefined && user.id !== null ? String(user.id) : null;
 
     const existingIds = await Store.getActivityIds();
-    const SIXTEEN_WEEKS_MS = 16 * 7 * 24 * 60 * 60 * 1000;
-    const after = Math.floor((Date.now() - SIXTEEN_WEEKS_MS) / 1000);
+    const SYNC_WINDOW_MS = 24 * 7 * 24 * 60 * 60 * 1000;
+    const after = Math.floor((Date.now() - SYNC_WINDOW_MS) / 1000);
 
     console.log('[Sync] Starting sync. Fetching activities after', new Date(after * 1000).toISOString());
     console.log('[Sync] Existing cached activities:', existingIds.size);

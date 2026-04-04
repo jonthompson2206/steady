@@ -89,6 +89,7 @@ const Charts = (() => {
   let vsRecommendedChart = null;
   let overUnderChart = null;
   let outlook6MonthChart = null;
+  let volumeTrendChart = null;
 
   function renderPerformanceChart(canvasId, chartData, period, metricKey) {
     const canvas = document.getElementById(canvasId);
@@ -332,16 +333,184 @@ const Charts = (() => {
     });
   }
 
+  function renderVolumeTrendChart(canvasId, trendData) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !trendData || trendData.length === 0) return;
+    const ctx = canvas.getContext('2d');
+
+    if (volumeTrendChart) volumeTrendChart.destroy();
+
+    const labels = trendData.map(d => d.week_label);
+    const weightedAvgData = trendData.map(d => d.weighted_avg);
+    const recommendationData = trendData.map(d => d.recommendation);
+    const actualData = trendData.map(d => d.is_future ? null : d.actual_volume);
+    const projectedData = trendData.map(d => d.is_future ? d.projected_volume : null);
+
+    const actualBgColors = trendData.map((d, i) => {
+      if (d.is_future || d.actual_volume === null) return 'transparent';
+      if (d.is_current) return accentGreen + '60';
+      return d.actual_volume > recommendationData[i] ? accentRed + '60' : 'rgba(255,255,255,0.25)';
+    });
+    const actualBorderColors = trendData.map((d, i) => {
+      if (d.is_future || d.actual_volume === null) return 'transparent';
+      if (d.is_current) return accentGreen;
+      return d.actual_volume > recommendationData[i] ? accentRed : 'rgba(255,255,255,0.5)';
+    });
+
+    const todayDivider = {
+      id: 'todayDivider',
+      beforeDraw(chart) {
+        const currentIdx = trendData.findIndex(d => d.is_current);
+        if (currentIdx < 0 || currentIdx >= trendData.length - 1) return;
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+        const x = (xScale.getPixelForValue(currentIdx) + xScale.getPixelForValue(currentIdx + 1)) / 2;
+        const c = chart.ctx;
+        c.save();
+        c.setLineDash([4, 4]);
+        c.strokeStyle = '#444';
+        c.lineWidth = 1;
+        c.beginPath();
+        c.moveTo(x, yScale.top);
+        c.lineTo(x, yScale.bottom);
+        c.stroke();
+        c.restore();
+        c.save();
+        c.fillStyle = '#555';
+        c.font = "10px 'Inter', sans-serif";
+        c.textAlign = 'left';
+        c.fillText('Projected', x + 6, yScale.top + 14);
+        c.restore();
+      },
+    };
+
+    volumeTrendChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            type: 'line',
+            label: 'Rec. Max (+25%)',
+            data: recommendationData,
+            borderColor: accentGreen + '50',
+            borderWidth: 1,
+            borderDash: [5, 5],
+            backgroundColor: 'transparent',
+            fill: {
+              target: 1,
+              above: accentGreen + '12',
+            },
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointBackgroundColor: accentGreen + '50',
+            order: 4,
+          },
+          {
+            type: 'line',
+            label: '12wk Weighted Avg',
+            data: weightedAvgData,
+            borderColor: accentGreen,
+            borderWidth: 2,
+            fill: false,
+            tension: 0.3,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            pointBackgroundColor: accentGreen,
+            order: 3,
+          },
+          {
+            label: 'Actual Volume',
+            data: actualData,
+            backgroundColor: actualBgColors,
+            borderColor: actualBorderColors,
+            borderWidth: 1,
+            borderRadius: 3,
+            barPercentage: 0.65,
+            categoryPercentage: 0.85,
+            stack: 'volume',
+            order: 1,
+          },
+          {
+            label: 'Projected Volume',
+            data: projectedData,
+            backgroundColor: accentGreen + '25',
+            borderColor: accentGreen + '50',
+            borderWidth: 1,
+            borderRadius: 3,
+            barPercentage: 0.65,
+            categoryPercentage: 0.85,
+            stack: 'volume',
+            order: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: legendStyle(),
+          tooltip: {
+            ...tooltipStyle(),
+            callbacks: {
+              title: (items) => {
+                const idx = items[0].dataIndex;
+                const d = trendData[idx];
+                if (d.is_current) return 'This Week (' + d.week_label + ')';
+                if (d.is_future) return 'Projected (' + d.week_label + ')';
+                return 'Week of ' + d.week_label;
+              },
+              label: (context) => {
+                const value = context.parsed.y;
+                if (value === null || value === undefined) return null;
+                return context.dataset.label + ': ' + value + ' km';
+              },
+            },
+            filter: (item) => item.parsed.y !== null && item.parsed.y !== undefined,
+          },
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { color: '#222', drawBorder: false },
+            ticks: {
+              color: '#666',
+              font: { family: "'Inter', sans-serif", size: 10 },
+              maxRotation: 45,
+              autoSkip: true,
+              maxTicksLimit: 17,
+            },
+          },
+          y: {
+            stacked: true,
+            grid: { color: '#222', drawBorder: false },
+            ticks: {
+              color: '#666',
+              font: { family: "'Inter', sans-serif", size: 10 },
+              callback: (v) => v + ' km',
+            },
+            beginAtZero: true,
+          },
+        },
+      },
+      plugins: [todayDivider],
+    });
+  }
+
   function destroyAll() {
     if (vsRecommendedChart) { vsRecommendedChart.destroy(); vsRecommendedChart = null; }
     if (overUnderChart) { overUnderChart.destroy(); overUnderChart = null; }
     if (outlook6MonthChart) { outlook6MonthChart.destroy(); outlook6MonthChart = null; }
+    if (volumeTrendChart) { volumeTrendChart.destroy(); volumeTrendChart = null; }
   }
 
   return {
     renderPerformanceChart,
     renderOverUnderChart,
     renderOutlookChart,
+    renderVolumeTrendChart,
     destroyAll,
   };
 })();

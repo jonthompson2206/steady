@@ -77,7 +77,7 @@ a:hover { color: var(--accent-mint); }
     align-items: center;
 }
 .nav-logo { display: flex; align-items: center; font-weight: 700; font-size: var(--font-size-xl); letter-spacing: -0.02em; }
-.nav-logo-img { height: 36px; width: auto; }
+.nav-logo-img { height: 28px; width: auto; }
 .nav-links { display: flex; gap: var(--space-lg); }
 .nav-link {
     font-size: var(--font-size-sm);

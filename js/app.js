@@ -142,9 +142,16 @@ const App = (() => {
       return;
     }
 
+    const trendData = Calculations.buildVolumeTrendData(data.weekly_stats);
+
     dc.innerHTML = renderThisWeek(data) +
+      renderVolumeTrend(trendData) +
       renderLastWeek(data) +
       renderNextWeekPreview(nextWeek);
+
+    if (trendData) {
+      Charts.renderVolumeTrendChart('volumeTrendChart', trendData);
+    }
   }
 
   function renderEmptyState(data, activities) {
@@ -294,6 +301,18 @@ const App = (() => {
           <div class="context-item"><span class="context-label">Weighted avg volume</span><span class="context-value">${d.rolling_average.distance_km} km</span></div>
           ${hrConfigured ? `<div class="context-item"><span class="context-label">Weighted avg intensity</span><span class="context-value">${d.rolling_average.intensity_minutes} min</span></div>` : ''}
           <div class="context-item"><span class="context-label">Weighted avg long run</span><span class="context-value">${d.rolling_average.long_run_km} km</span></div>
+        </div>
+      </section>`;
+  }
+
+  function renderVolumeTrend(trendData) {
+    if (!trendData) return '';
+    return `
+      <section class="section">
+        <h2 class="section-header">Volume Trend & Projection</h2>
+        <p class="section-subtitle">12-week weighted average with 4-week forward projection assuming targets are met</p>
+        <div class="chart-container">
+          <canvas id="volumeTrendChart"></canvas>
         </div>
       </section>`;
   }
