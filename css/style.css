@@ -198,7 +198,7 @@ a:hover { color: var(--accent-mint); }
 .section-subtitle { font-size: var(--font-size-sm); color: var(--text-secondary); margin-top: calc(var(--space-lg) * -1); margin-bottom: var(--space-lg); }
 
 /* Metrics */
-.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg); margin-bottom: var(--space-lg); }
+.metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg); margin-bottom: var(--space-lg); }
 .metric-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-lg); }
 .metric-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); }
 .metric-label { font-size: var(--font-size-sm); color: var(--text-secondary); }
