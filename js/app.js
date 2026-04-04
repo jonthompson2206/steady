@@ -341,14 +341,10 @@ const App = (() => {
                 d.progress.intensity_percent, d.current_week_increase.intensity_increase,
                 d.remaining.intensity_minutes, 'min')
             : renderIntensityError()}
-          ${renderMetricCard('Long Run', d.current_week.long_run_km, d.max_this_week.long_run_km, 'km',
-            d.progress.long_run_percent, d.current_week_increase.long_run_increase,
-            d.remaining.long_run_km, 'km')}
         </div>
         <div class="week-context">
           <div class="context-item"><span class="context-label">Weighted avg volume</span><span class="context-value">${d.rolling_average.distance_km} km</span></div>
           ${hrConfigured ? `<div class="context-item"><span class="context-label">Weighted avg intensity</span><span class="context-value">${d.rolling_average.intensity_minutes} min</span></div>` : ''}
-          <div class="context-item"><span class="context-label">Weighted avg long run</span><span class="context-value">${d.rolling_average.long_run_km} km</span></div>
         </div>
       </section>`;
   }
@@ -378,7 +374,6 @@ const App = (() => {
           ${hrConfigured
             ? renderReviewCard('Intensity', lw.intensity_minutes, lw.max_intensity, 'min', lw.intensity_percent, lw.intensity_increase)
             : renderIntensityError()}
-          ${renderReviewCard('Long Run', lw.long_run_km, lw.max_long_run, 'km', lw.long_run_percent, lw.long_run_increase)}
         </div>
         <div class="week-context"><div class="context-item"><span class="context-label">Runs completed</span><span class="context-value">${lw.run_count}</span></div></div>
       </section>`;
@@ -395,8 +390,6 @@ const App = (() => {
             `Weighted avg: ${nw.rolling_average.distance_km} km (+${nw.uplift.distance_km} km)`)}
           ${renderPreviewCard('Intensity', nw.max_next_week.intensity_minutes, 'min', '+25%',
             `Weighted avg: ${nw.rolling_average.intensity_minutes} min (+${nw.uplift.intensity_minutes} min)`)}
-          ${renderPreviewCard('Long Run', nw.max_next_week.long_run_km, 'km', '30% vol',
-            `Weighted avg: ${nw.rolling_average.long_run_km} km (+${nw.uplift.long_run_km} km)`)}
         </div>
         <div class="week-context"><div class="context-item"><span class="context-label">Week</span><span class="context-value">${nw.week_label}</span></div></div>
       </section>`;
@@ -472,43 +465,36 @@ const App = (() => {
     }
 
     // Totals
-    let totalDist = 0, totalInt = 0, longestRun = 0;
+    let totalDist = 0, totalInt = 0;
     for (const rd of Object.values(runsByDay)) {
       if (rd) {
         totalDist += rd.distance_km || 0;
         totalInt += rd.intensity_minutes || 0;
-        if ((rd.distance_km || 0) > longestRun) longestRun = rd.distance_km;
       }
     }
 
     // Comparison
     let comparison = null;
     if (recommendations.has_enough_data) {
-      let maxDist, maxInt, maxLr, avgDist, avgInt, avgLr;
+      let maxDist, maxInt, avgDist, avgInt;
       if (isNext) {
         const nwp = Calculations.calculateNextWeekPreview(recommendations);
         if (nwp) {
           maxDist = nwp.max_next_week.distance_km;
           maxInt = nwp.max_next_week.intensity_minutes;
-          maxLr = nwp.max_next_week.long_run_km;
           avgDist = nwp.rolling_average.distance_km;
           avgInt = nwp.rolling_average.intensity_minutes;
-          avgLr = nwp.rolling_average.long_run_km;
         } else {
           maxDist = recommendations.max_this_week.distance_km;
           maxInt = recommendations.max_this_week.intensity_minutes;
-          maxLr = recommendations.max_this_week.long_run_km;
           avgDist = recommendations.rolling_average.distance_km;
           avgInt = recommendations.rolling_average.intensity_minutes;
-          avgLr = recommendations.rolling_average.long_run_km;
         }
       } else {
         maxDist = recommendations.max_this_week.distance_km;
         maxInt = recommendations.max_this_week.intensity_minutes;
-        maxLr = recommendations.max_this_week.long_run_km;
         avgDist = recommendations.rolling_average.distance_km;
         avgInt = recommendations.rolling_average.intensity_minutes;
-        avgLr = recommendations.rolling_average.long_run_km;
       }
 
       comparison = {
@@ -525,13 +511,6 @@ const App = (() => {
           percent: maxInt > 0 ? Math.round(totalInt / maxInt * 100) : 0,
           over: totalInt > maxInt,
           increase: avgInt > 0 ? Math.round((totalInt - avgInt) / avgInt * 1000) / 10 : 0,
-        },
-        long_run: {
-          planned: Math.round(longestRun * 10) / 10,
-          max: maxLr,
-          percent: maxLr > 0 ? Math.round(longestRun / maxLr * 100) : 0,
-          over: longestRun > maxLr,
-          increase: avgLr > 0 ? Math.round((longestRun - avgLr) / avgLr * 1000) / 10 : 0,
         },
       };
     }
@@ -568,7 +547,6 @@ const App = (() => {
           <div class="metrics-grid">
             ${renderPlanMetric('Volume', comparison.distance, 'km')}
             ${renderPlanMetric('Intensity', comparison.intensity, 'min')}
-            ${renderPlanMetric('Long Run', comparison.long_run, 'km')}
           </div>
         </section>`;
     }
@@ -632,9 +610,7 @@ const App = (() => {
   }
 
   function renderPlanMetric(label, comp, unit) {
-    const overThreshold = label === 'Long Run' ? 110 : 30;
-    const warnThreshold = label === 'Long Run' ? 100 : 25;
-    const pctClass = comp.increase > overThreshold ? 'over' : (comp.increase > warnThreshold ? 'warning' : '');
+    const pctClass = comp.increase > 30 ? 'over' : (comp.increase > 25 ? 'warning' : '');
     const sign = comp.increase > 0 ? '+' : '';
 
     let fill, limit;
@@ -677,7 +653,7 @@ const App = (() => {
             <input type="hidden" id="modalIsEdit" value="false">
             <div class="form-group">
               <label for="runName">Run Name</label>
-              <input type="text" id="runName" placeholder="e.g., Easy Run, Tempo, Long Run" required>
+              <input type="text" id="runName" placeholder="e.g., Easy Run, Tempo, Intervals" required>
             </div>
             <div class="form-group">
               <label for="runDistance">Volume (km)</label>
