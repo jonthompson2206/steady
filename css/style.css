@@ -226,7 +226,8 @@ a:hover { color: var(--accent-mint); }
 /* Fitness Progress */
 .fitness-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg); margin-bottom: var(--space-lg); }
 .fitness-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-lg); }
-.fitness-label { font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-md); }
+.fitness-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); }
+.fitness-label { font-size: var(--font-size-sm); color: var(--text-secondary); }
 .fitness-comparison { display: flex; align-items: baseline; gap: var(--space-md); margin-bottom: var(--space-sm); }
 .fitness-old { font-size: var(--font-size-lg); font-weight: 500; color: var(--text-muted); }
 .fitness-arrow { font-size: var(--font-size-md); color: var(--text-muted); }
@@ -235,6 +236,7 @@ a:hover { color: var(--accent-mint); }
 .fitness-change { font-size: var(--font-size-sm); font-weight: 600; }
 .fitness-change.up { color: var(--accent-green); }
 .fitness-change.down { color: var(--accent-red); }
+.fitness-detail { font-size: var(--font-size-xs); color: var(--text-muted); }
 
 /* Week Context */
 .week-context { display: flex; gap: var(--space-xl); padding: var(--space-md); background: var(--bg-card); border-radius: var(--radius-md); }

@@ -298,23 +298,29 @@ const App = (() => {
         <p class="section-subtitle">12-week weighted average: week of ${fp.baseline.week_label} vs week of ${fp.recent.week_label}</p>
         <div class="fitness-grid">
           <div class="fitness-card">
-            <div class="fitness-label">Avg Volume</div>
+            <div class="fitness-header">
+              <span class="fitness-label">Avg Volume</span>
+              <span class="fitness-change ${distClass}">${distSign}${fp.change.distance_percent}%</span>
+            </div>
             <div class="fitness-comparison">
               <span class="fitness-old">${fp.baseline.distance_km}<span class="fitness-unit"> km</span></span>
               <span class="fitness-arrow">→</span>
               <span class="fitness-now">${fp.recent.distance_km}<span class="fitness-unit"> km</span></span>
             </div>
-            <div class="fitness-change ${distClass}">${distSign}${fp.change.distance_km} km (${distSign}${fp.change.distance_percent}%)</div>
+            <div class="fitness-detail">${distSign}${fp.change.distance_km} km over ${fp.baseline.weeks_ago - 1} weeks</div>
           </div>
           ${hrConfigured ? `
           <div class="fitness-card">
-            <div class="fitness-label">Avg Intensity</div>
+            <div class="fitness-header">
+              <span class="fitness-label">Avg Intensity</span>
+              <span class="fitness-change ${intClass}">${intSign}${fp.change.intensity_percent}%</span>
+            </div>
             <div class="fitness-comparison">
               <span class="fitness-old">${fp.baseline.intensity_minutes}<span class="fitness-unit"> min</span></span>
               <span class="fitness-arrow">→</span>
               <span class="fitness-now">${fp.recent.intensity_minutes}<span class="fitness-unit"> min</span></span>
             </div>
-            <div class="fitness-change ${intClass}">${intSign}${fp.change.intensity_minutes} min (${intSign}${fp.change.intensity_percent}%)</div>
+            <div class="fitness-detail">${intSign}${fp.change.intensity_minutes} min over ${fp.baseline.weeks_ago - 1} weeks</div>
           </div>` : ''}
         </div>
       </section>`;

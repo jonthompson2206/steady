@@ -355,7 +355,8 @@ const Calculations = (() => {
     if (recentAvgDist === null) return null;
 
     let baselineIdx = null;
-    for (let i = weeklyStats.length - 13; i >= 2; i--) {
+    const targetIdx = recentIdx + 12;
+    for (let i = targetIdx; i >= 2; i--) {
       const avg = calculateWeightedAverage(weeklyStats, 'distance_km', i);
       if (avg !== null && avg > 0) {
         baselineIdx = i;
