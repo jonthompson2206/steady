@@ -5,103 +5,64 @@ const App = (() => {
 
   async function init() {
     const authed = await Strava.handleCallback();
+    window.addEventListener('hashchange', route);
+
     if (authed) {
       window.location.hash = '#/dashboard';
-      window.addEventListener('hashchange', route);
       route();
       await sync();
       return;
     }
 
-    window.addEventListener('hashchange', route);
+    if (!window.location.hash || window.location.hash === '#/') {
+      window.location.hash = '#/dashboard';
+    }
     route();
   }
 
   function route() {
     const hash = window.location.hash || '#/';
-    const authenticated = Strava.isAuthenticated();
 
-    updateNav(authenticated);
+    updateNav();
 
-    if (hash.startsWith('#/dashboard') && authenticated) {
-      showDashboard();
-    } else if (hash.startsWith('#/plan') && authenticated) {
+    if (hash.startsWith('#/plan')) {
       showPlan(hash);
-    } else if (hash.startsWith('#/settings') && authenticated) {
+    } else if (hash.startsWith('#/settings')) {
       showSettings();
-    } else if (authenticated) {
-      window.location.hash = '#/dashboard';
+    } else if (hash.startsWith('#/dashboard')) {
+      showDashboard();
     } else {
-      showLanding();
+      window.location.hash = '#/dashboard';
     }
   }
 
-  function updateNav(authenticated) {
+  function updateNav() {
     const navLinks = document.getElementById('navLinks');
     if (!navLinks) return;
-    navLinks.style.display = authenticated ? '' : 'none';
+    navLinks.style.display = '';
   }
 
   // =========================================================================
-  // Landing
+  // Strava Connect Prompt (shared)
   // =========================================================================
-  function showLanding() {
-    currentView = 'landing';
-    Charts.destroyAll();
-    const main = document.getElementById('mainContent');
-    main.innerHTML = `
-      <div class="hero">
-        <div class="hero-content">
-          <img src="static/steady-logo.png" alt="Steady" class="hero-logo">
-          <h1 class="hero-title">
-            <span class="hero-title-line">Train Smarter.</span>
-            <span class="hero-title-line">Stay <span class="accent">Injury-Free</span>.</span>
-          </h1>
-          <p class="hero-subtitle">
-            Steady helps injury-prone runners manage training volume with the proven
-            <span class="mono-highlight">25% rule</span> on a weighted 12-week basis.
-          </p>
-          <div class="hero-features">
-            <div class="feature"><span class="feature-icon">◈</span><span class="feature-text">Weighted 12-week volume tracking</span></div>
-            <div class="feature"><span class="feature-icon">◈</span><span class="feature-text">Intensity monitoring via heart rate</span></div>
-            <div class="feature"><span class="feature-icon">◈</span><span class="feature-text">Weekly planning with recommendations</span></div>
-            <div class="feature"><span class="feature-icon">◈</span><span class="feature-text">Historical compliance tracking</span></div>
-          </div>
-          <button onclick="Strava.login()" class="btn btn--primary btn--large">
-            <svg class="strava-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
-            </svg>
-            Connect with Strava
-          </button>
-          <p class="hero-note">Syncs your running data automatically. We only read activity data.</p>
+  function renderStravaConnectCard() {
+    return `
+      <div class="connect-prompt">
+        <div class="connect-prompt-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
+            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
+          </svg>
         </div>
-        <div class="hero-visual">
-          <div class="visual-card">
-            <div class="visual-header">
-              <span class="visual-label">This Week</span>
-              <span class="visual-status status--safe">On Track</span>
-            </div>
-            <div class="visual-metric">
-              <span class="metric-value">32.4</span>
-              <span class="metric-unit">km</span>
-            </div>
-            <div class="visual-bar">
-              <div class="bar-fill" style="width: 72%"></div>
-              <div class="bar-limit"></div>
-            </div>
-            <div class="visual-context"><span>Max recommended: 45.0 km</span></div>
-          </div>
-        </div>
-      </div>
-      <section class="how-it-works">
-        <h2 class="section-title">How the 25% Rule Works</h2>
-        <div class="rule-explanation">
-          <div class="rule-step"><div class="step-number">01</div><div class="step-content"><h3>Track Your Volume</h3><p>We sync your running data from Strava and calculate your weekly distance in kilometers.</p></div></div>
-          <div class="rule-step"><div class="step-number">02</div><div class="step-content"><h3>Calculate Weighted Average</h3><p>Your weighted average is computed from the past 12 weeks, with recent weeks counting more.</p></div></div>
-          <div class="rule-step"><div class="step-number">03</div><div class="step-content"><h3>Set Your Limit</h3><p>This week's maximum is your weighted 12-week average plus 25%. Never increase more than that.</p></div></div>
-          <div class="rule-step"><div class="step-number">04</div><div class="step-content"><h3>Run Safely</h3><p>Plan your week and get recommendations on how far to run while staying within safe limits.</p></div></div>
-        </div>
-      </section>`;
+        <h2>Connect Your Strava Account</h2>
+        <p>Link your Strava to import your running history and get personalised volume recommendations based on the 25% rule.</p>
+        <button onclick="Strava.login()" class="btn btn--primary btn--large">
+          <svg class="strava-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
+          </svg>
+          Connect with Strava
+        </button>
+        <p class="connect-prompt-note">We only read your activity data. Nothing is shared or posted.</p>
+      </div>`;
   }
 
   // =========================================================================
@@ -111,10 +72,25 @@ const App = (() => {
     currentView = 'dashboard';
     Charts.destroyAll();
     const main = document.getElementById('mainContent');
-    const user = Store.getUserProfile();
-    const firstName = user ? (user.firstname || 'Runner') : 'Runner';
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+    if (!Strava.isAuthenticated()) {
+      main.innerHTML = `
+        <div class="dashboard">
+          <header class="dash-header">
+            <div class="dash-greeting">
+              <h1>Dashboard</h1>
+              <p class="dash-date">${dateStr}</p>
+            </div>
+          </header>
+          ${renderStravaConnectCard()}
+        </div>`;
+      return;
+    }
+
+    const user = Store.getUserProfile();
+    const firstName = user ? (user.firstname || 'Runner') : 'Runner';
 
     main.innerHTML = `
       <div class="dashboard">
@@ -402,6 +378,18 @@ const App = (() => {
   async function showPlan(hash) {
     currentView = 'plan';
     Charts.destroyAll();
+
+    if (!Strava.isAuthenticated()) {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div class="plan-page">
+          <header class="plan-header">
+            <div><h1>Weekly Plan</h1><p class="plan-subtitle">Plan your training week</p></div>
+          </header>
+          ${renderStravaConnectCard()}
+        </div>`;
+      return;
+    }
 
     const isNext = hash.includes('next');
     const now = new Date();
@@ -731,6 +719,7 @@ const App = (() => {
   function showSettings() {
     currentView = 'settings';
     Charts.destroyAll();
+    const authenticated = Strava.isAuthenticated();
     const settings = Store.getSettings();
     const lastSync = Store.getLastSyncTime();
     const syncText = lastSync ? new Date(lastSync).toLocaleString() : 'Never';
@@ -739,10 +728,37 @@ const App = (() => {
     const raceMinutes = settings.race_time_seconds ? Math.floor((settings.race_time_seconds % 3600) / 60) : 0;
     const raceSecs = settings.race_time_seconds ? settings.race_time_seconds % 60 : 0;
 
+    const connectSection = !authenticated ? `
+      <section class="settings-section">
+        <h2>Strava Account</h2>
+        <div class="connect-prompt connect-prompt--compact">
+          <p>Connect your Strava account to sync your running data.</p>
+          <button onclick="Strava.login()" class="btn btn--primary">
+            <svg class="strava-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
+            </svg>
+            Connect with Strava
+          </button>
+        </div>
+      </section>` : '';
+
+    const dataSection = authenticated ? `
+      <section class="settings-section">
+        <h2>Data</h2>
+        <p class="form-help">Last sync: ${syncText}</p>
+        <div class="form-actions" style="margin-top: 12px">
+          <button type="button" class="btn btn--secondary" onclick="App.sync()">Sync Activities</button>
+          <button type="button" class="btn btn--secondary" onclick="App.fullResync()">Full Re-sync</button>
+          <button type="button" class="btn btn--danger" onclick="App.clearCachedData()">Clear Cached Data</button>
+          <button type="button" class="btn btn--secondary" onclick="App.logout()">Logout</button>
+        </div>
+      </section>` : '';
+
     const main = document.getElementById('mainContent');
     main.innerHTML = `
       <div class="settings-page">
         <h1>Settings</h1>
+        ${connectSection}
         <form id="settingsForm" onsubmit="App.saveSettingsForm(event)">
           <section class="settings-section">
             <h2>Heart Rate</h2>
@@ -782,16 +798,7 @@ const App = (() => {
             <button type="submit" class="btn btn--primary">Save Settings</button>
           </div>
         </form>
-        <section class="settings-section">
-          <h2>Data</h2>
-          <p class="form-help">Last sync: ${syncText}</p>
-          <div class="form-actions" style="margin-top: 12px">
-            <button type="button" class="btn btn--secondary" onclick="App.sync()">Sync Activities</button>
-            <button type="button" class="btn btn--secondary" onclick="App.fullResync()">Full Re-sync</button>
-            <button type="button" class="btn btn--danger" onclick="App.clearCachedData()">Clear Cached Data</button>
-            <button type="button" class="btn btn--secondary" onclick="App.logout()">Logout</button>
-          </div>
-        </section>
+        ${dataSection}
       </div>`;
   }
 
@@ -895,7 +902,7 @@ const App = (() => {
   function logout() {
     if (!confirm('Log out of this browser session?')) return;
     Strava.logout();
-    window.location.hash = '#/';
+    window.location.hash = '#/dashboard';
     route();
   }
 
