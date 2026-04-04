@@ -146,8 +146,8 @@ const App = (() => {
     const fitnessProgress = Calculations.calculateFitnessProgress(data.weekly_stats);
 
     dc.innerHTML = renderFitnessProgress(fitnessProgress) +
-      renderThisWeek(data) +
       renderVolumeTrend(trendData) +
+      renderThisWeek(data) +
       renderLastWeek(data) +
       renderNextWeekPreview(nextWeek);
 
@@ -299,7 +299,7 @@ const App = (() => {
         <div class="fitness-grid">
           <div class="fitness-card">
             <div class="fitness-header">
-              <span class="fitness-label">12 week weighted Volume</span>
+              <span class="fitness-label">Avg Volume</span>
               <span class="fitness-change ${distClass}">${distSign}${fp.change.distance_percent}%</span>
             </div>
             <div class="fitness-comparison">
@@ -312,7 +312,7 @@ const App = (() => {
           ${hrConfigured ? `
           <div class="fitness-card">
             <div class="fitness-header">
-              <span class="fitness-label">12 week weighted Intensity</span>
+              <span class="fitness-label">Avg Intensity</span>
               <span class="fitness-change ${intClass}">${intSign}${fp.change.intensity_percent}%</span>
             </div>
             <div class="fitness-comparison">
